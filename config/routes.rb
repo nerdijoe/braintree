@@ -9,6 +9,9 @@ Rails.application.routes.draw do
 
    get 'braintree/new' => 'braintree#new'
 
+
+   post 'braintree/checkout'
+
   # Example of regular route:
   #   get 'products/:id' => 'catalog#view'
 
