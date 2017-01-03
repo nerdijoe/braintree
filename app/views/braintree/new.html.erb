@@ -15,10 +15,10 @@
   <%= form.label :cvv, "CVV", html: {class: "hosted-fields--label"} %>
   <div id="cvv" class="hosted-field"></div>
 
-  <%= form.hidden_field :payment_method_nonce, value: 'fake-valid-visa-nonce' %>
+  <%= form.hidden_field :payment_method_nonce %>
 
   <div class ="button-container">
-    <%= form.submit "Purchase", disabled: false, class: "btn btn-primary", id: "submit-payment-btn" %>
+    <%= form.submit "Purchase", disabled: true, class: "btn btn-primary", id: "submit-payment-btn" %>
   </div>
 
   <% end %>
@@ -37,33 +37,28 @@
 var form = document.querySelector('#cardForm');
 // var authorization = 'sandbox_g42y39zw_348pk9cgf3bgyw2b';
 var authorization = '<%= @client_token %>';
-var submit = document.querySelector("#submit-payment-btn");
+var submitBtn = document.querySelector("#submit-payment-btn");
 
 braintree.client.create({
+  // Replace this with your own authorization.
   authorization: authorization
-}, function(err, clientInstance) {
-  if (err) {
-    console.error(err);
+}, function (clientErr, clientInstance) {
+  if (clientErr) {
+    // Handle error in client creation
     return;
   }
-  createHostedFields(clientInstance);
-});
 
-function createHostedFields(clientInstance) {
   braintree.hostedFields.create({
     client: clientInstance,
     styles: {
       'input': {
-        'font-size': '16px',
-        'font-family': 'courier, monospace',
-        'font-weight': 'lighter',
-        'color': '#ccc'
+        'font-size': '14pt'
       },
-      ':focus': {
-        'color': 'black'
+      'input.invalid': {
+        'color': 'red'
       },
-      '.valid': {
-        'color': '#8bdda8'
+      'input.valid': {
+        'color': 'green'
       }
     },
     fields: {
@@ -77,21 +72,35 @@ function createHostedFields(clientInstance) {
       },
       expirationDate: {
         selector: '#expiration-date',
-        placeholder: 'MM/YYYY'
+        placeholder: '10/2019'
       }
     }
-  }, function (err, hostedFieldsInstance) {
-    var teardown = function (event) {
-      event.preventDefault();
-      alert('Submit your nonce to your server here!');
-      hostedFieldsInstance.teardown(function () {
-        createHostedFields(clientInstance);
-        form.removeEventListener(submit, teardown, false);
-      });
-    };
+  }, function (hostedFieldsErr, hostedFieldsInstance) {
+    if (hostedFieldsErr) {
+      // Handle error in Hosted Fields creation
+      return;
+    }
 
-    form.addEventListener(submit, teardown, false);
+    submitBtn.removeAttribute('disabled');
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+
+      hostedFieldsInstance.tokenize(function (tokenizeErr, payload) {
+        if (tokenizeErr) {
+          // Handle error in Hosted Fields tokenization
+          return;
+        }
+
+        // Put `payload.nonce` into the `payment-method-nonce` input, and then
+        // submit the form. Alternatively, you could send the nonce to your server
+        // with AJAX.
+        document.querySelector('#checkout_form_payment_method_nonce').value = payload.nonce;
+        form.submit();
+      });
+    }, false);
   });
-}
+});
+
 
 </script>
