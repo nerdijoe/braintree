@@ -5,7 +5,7 @@ class BraintreeController < ApplicationController
 
   def checkout
     nonce_from_the_client = params[:checkout_form][:payment_method_nonce]
-    
+    byebug
     result = Braintree::Transaction.sale(
       :amount => "1000.00", #this is currently hardcoded
       :payment_method_nonce => nonce_from_the_client,
